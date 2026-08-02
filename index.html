@@ -1,0 +1,799 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CERNE — Sistema de Atendimento</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,400;0,9..144,500;0,9..144,600;1,9..144,400;1,9..144,500&family=Inter:wght@300;400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#1B2420;
+    --ink-soft:#25302A;
+    --paper:#EFEAE1;
+    --paper-soft:#F7F4EC;
+    --moss:#5B6E4F;
+    --moss-dark:#465A3C;
+    --gold:#C79A56;
+    --gold-soft:#E4C489;
+    --stone:#8E8579;
+    --cream:#F5F1E8;
+    --line: rgba(27,36,32,0.12);
+    --line-light: rgba(245,241,232,0.16);
+    --danger:#A24B3E;
+    --ease: cubic-bezier(.16,.8,.24,1);
+  }
+  *{margin:0;padding:0;box-sizing:border-box;}
+  body{
+    background:var(--ink);
+    color:var(--ink);
+    font-family:'Inter',sans-serif;
+    line-height:1.5;
+    -webkit-font-smoothing:antialiased;
+    min-height:100vh;
+    overflow-x:hidden;
+  }
+  h1,h2,h3{font-family:'Fraunces',serif;font-weight:500;letter-spacing:-0.01em;}
+  .mono{font-family:'IBM Plex Mono',monospace;}
+  .eyebrow{font-family:'IBM Plex Mono',monospace;font-size:0.7rem;letter-spacing:0.14em;text-transform:uppercase;color:var(--gold);}
+  button{font-family:inherit;cursor:pointer;border:none;background:none;color:inherit;}
+  input,textarea{font-family:inherit;font-size:1rem;}
+
+  #app{
+    position:relative;
+    min-height:100vh;
+    background:var(--paper);
+  }
+
+  .screen{
+    display:none;
+    min-height:100vh;
+    width:100%;
+    align-items:center;
+    justify-content:center;
+    padding:60px 24px;
+    opacity:0;
+    transform:translateY(14px);
+    transition:opacity .35s var(--ease), transform .35s var(--ease);
+  }
+  .screen.active{
+    display:flex;
+    opacity:1;
+    transform:translateY(0);
+  }
+  .screen-dark{background:var(--ink);color:var(--cream);}
+
+  .card{
+    width:100%;
+    max-width:480px;
+    background:var(--paper-soft);
+    border:1px solid var(--line);
+    border-radius:6px;
+    padding:44px 40px;
+  }
+  .screen-dark .card{
+    background:var(--ink-soft);
+    border-color:var(--line-light);
+  }
+
+  .card-wide{max-width:760px;}
+  .card-xwide{max-width:920px;}
+
+  h2{font-size:1.7rem;margin:10px 0 8px;}
+  .lead{color:#4B5148;font-size:0.98rem;margin-bottom:28px;}
+  .screen-dark .lead{color:rgba(245,241,232,0.7);}
+
+  .field{margin-bottom:20px;}
+  .field label{display:block;font-size:0.8rem;color:var(--stone);margin-bottom:8px;}
+  .field input, .field textarea{
+    width:100%;
+    padding:14px 16px;
+    border:1px solid var(--line);
+    border-radius:4px;
+    background:#fff;
+    color:var(--ink);
+    outline:none;
+    transition:border-color .25s var(--ease);
+  }
+  .field input:focus, .field textarea:focus{border-color:var(--moss);}
+  .field textarea{resize:vertical;min-height:90px;}
+
+  .btn{
+    display:inline-flex;align-items:center;justify-content:center;gap:8px;
+    background:var(--ink);color:var(--cream);
+    padding:14px 26px;border-radius:100px;
+    font-size:0.9rem;font-weight:500;
+    transition:transform .25s var(--ease), background .25s var(--ease), opacity .25s var(--ease);
+    width:100%;
+  }
+  .btn:hover{background:var(--moss-dark);transform:translateY(-1px);}
+  .btn:disabled{opacity:0.35;cursor:not-allowed;transform:none;}
+  .btn-gold{background:var(--gold);color:var(--ink);font-weight:600;}
+  .btn-gold:hover{background:var(--gold-soft);}
+  .btn-ghost{background:transparent;color:inherit;border:1px solid var(--line);}
+  .screen-dark .btn-ghost{border-color:var(--line-light);}
+  .btn-ghost:hover{background:rgba(0,0,0,0.04);}
+  .btn-row{display:flex;gap:12px;margin-top:8px;}
+  .btn-row .btn{width:auto;flex:1;}
+
+  .err{color:var(--danger);font-size:0.84rem;margin-top:10px;min-height:1em;}
+
+  /* ---- splash ---- */
+  .splash-ring{position:relative;width:160px;height:160px;margin:0 auto 30px;display:flex;align-items:center;justify-content:center;}
+  .ring{position:absolute;border-radius:50%;border:1px solid var(--gold);opacity:.5;}
+  .ring1{width:100px;height:100px;animation:breathe 3.2s ease-in-out infinite;}
+  .ring2{width:150px;height:150px;animation:breathe 3.2s ease-in-out infinite;animation-delay:.15s;opacity:.3;}
+  .core{width:56px;height:56px;border-radius:50%;background:radial-gradient(circle at 35% 30%, var(--gold-soft), var(--moss-dark) 80%);animation:breathe 3.2s ease-in-out infinite;box-shadow:0 0 40px rgba(199,154,86,.35);}
+  @keyframes breathe{0%,100%{transform:scale(.85)}50%{transform:scale(1.12)}}
+  @media (prefers-reduced-motion: reduce){ .ring,.core{animation:none;} }
+  .splash-text{text-align:center;}
+  .splash-text .logo{font-size:1.4rem;letter-spacing:.08em;margin-bottom:6px;}
+
+  /* ---- gender / role select cards ---- */
+  .choice-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:24px;}
+  .choice{
+    border:1px solid var(--line);border-radius:6px;padding:22px 16px;text-align:center;
+    background:#fff;transition:border-color .25s var(--ease), transform .2s var(--ease), background .25s var(--ease);
+  }
+  .choice:hover{border-color:var(--moss);transform:translateY(-2px);}
+  .choice.selected{border-color:var(--gold);background:#FBF3E4;}
+  .choice .ic{font-size:1.6rem;margin-bottom:8px;display:block;}
+  .choice .lbl{font-weight:500;font-size:0.95rem;}
+
+  /* ---- plan cards ---- */
+  .plan-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:26px;}
+  @media(max-width:700px){.plan-grid{grid-template-columns:1fr;}}
+  .plan-card{
+    border:1px solid var(--line);border-radius:6px;overflow:hidden;background:#fff;cursor:pointer;
+    transition:transform .25s var(--ease), box-shadow .25s var(--ease), border-color .25s var(--ease);
+  }
+  .plan-card:hover{transform:translateY(-3px);box-shadow:0 14px 30px rgba(27,36,32,.1);}
+  .plan-card.selected{border-color:var(--gold);box-shadow:0 14px 30px rgba(199,154,86,.22);}
+  .plan-head{padding:20px 16px;text-align:center;color:var(--cream);font-family:'Fraunces',serif;font-weight:600;font-size:1.05rem;letter-spacing:.02em;}
+  .plan-basico .plan-head{background:linear-gradient(135deg,#3B2E23,#2A2019);}
+  .plan-mediano .plan-head{background:linear-gradient(135deg,#7A5A38,#5E432A);}
+  .plan-pro .plan-head{background:linear-gradient(135deg,#C79A56,#A87A3E);}
+  .plan-body{padding:16px;font-size:0.82rem;color:var(--stone);text-align:center;}
+
+  /* ---- body part ordering ---- */
+  .parts-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:12px;margin-bottom:24px;}
+  .part{
+    position:relative;border:1px solid var(--line);border-radius:6px;padding:20px 12px;text-align:center;
+    background:#fff;font-weight:500;transition:border-color .25s var(--ease), background .25s var(--ease);
+  }
+  .part.picked{border-color:var(--moss);background:#F3F6F0;}
+  .part .badge{
+    position:absolute;top:-10px;right:-10px;width:26px;height:26px;border-radius:50%;
+    background:var(--moss-dark);color:#fff;font-family:'IBM Plex Mono',monospace;font-size:0.78rem;
+    display:flex;align-items:center;justify-content:center;
+  }
+  .facial-note{
+    font-size:0.8rem;color:var(--stone);margin-bottom:18px;padding:10px 14px;
+    background:#F7F1E4;border:1px dashed var(--gold);border-radius:4px;
+  }
+
+  /* ---- checkbox list (additionals) ---- */
+  .check-list{display:flex;flex-direction:column;gap:10px;margin-bottom:24px;}
+  .check-item{
+    display:flex;align-items:center;gap:12px;border:1px solid var(--line);border-radius:6px;
+    padding:14px 16px;background:#fff;transition:border-color .2s var(--ease), background .2s var(--ease);
+  }
+  .check-item.on{border-color:var(--moss);background:#F3F6F0;}
+  .dot{width:18px;height:18px;border-radius:50%;border:1.5px solid var(--stone);flex-shrink:0;position:relative;transition:border-color .2s;}
+  .check-item.on .dot{border-color:var(--moss-dark);}
+  .check-item.on .dot::after{content:'';position:absolute;inset:3px;border-radius:50%;background:var(--moss-dark);}
+
+  /* ---- gerando ---- */
+  .loader{width:44px;height:44px;border-radius:50%;border:2px solid var(--line);border-top-color:var(--gold);animation:spin 0.9s linear infinite;margin:0 auto 22px;}
+  @keyframes spin{to{transform:rotate(360deg);}}
+
+  /* ---- table ---- */
+  .code-box{
+    display:flex;align-items:center;justify-content:space-between;gap:12px;
+    background:var(--ink);color:var(--cream);padding:16px 20px;border-radius:6px;margin-bottom:24px;
+  }
+  .code-box .code{font-family:'IBM Plex Mono',monospace;font-size:1.3rem;letter-spacing:.08em;color:var(--gold-soft);}
+  .table-rows{display:flex;flex-direction:column;gap:1px;background:var(--line);border:1px solid var(--line);border-radius:6px;overflow:hidden;margin-bottom:20px;}
+  .trow{display:flex;align-items:center;gap:14px;background:#fff;padding:16px 18px;}
+  .trow.facial{background:#FBF3E4;}
+  .trow .step{
+    width:30px;height:30px;border-radius:50%;background:var(--ink);color:var(--cream);
+    font-family:'IBM Plex Mono',monospace;font-size:0.8rem;flex-shrink:0;
+    display:flex;align-items:center;justify-content:center;
+  }
+  .trow.facial .step{background:var(--gold);color:var(--ink);}
+  .trow .info{flex:1;}
+  .trow .info .t-name{font-weight:500;}
+  .trow .info .t-meta{font-size:0.78rem;color:var(--stone);margin-top:2px;}
+  .tcheck{width:24px;height:24px;border-radius:50%;border:1.5px solid var(--stone);flex-shrink:0;position:relative;transition:.2s;}
+  .tcheck.done{border-color:var(--moss-dark);background:var(--moss-dark);}
+  .tcheck.done::after{content:'✓';position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:#fff;font-size:0.8rem;}
+  .summary-box{font-size:0.86rem;color:var(--stone);border-top:1px dashed var(--line);padding-top:16px;margin-bottom:20px;line-height:1.7;}
+  .summary-box b{color:var(--ink);}
+
+  /* ---- client live view ---- */
+  .status-pill{
+    display:inline-flex;align-items:center;gap:8px;font-family:'IBM Plex Mono',monospace;font-size:0.72rem;
+    letter-spacing:.06em;text-transform:uppercase;color:var(--gold-soft);margin-bottom:18px;
+  }
+  .status-pill .dotlive{width:7px;height:7px;border-radius:50%;background:var(--gold-soft);animation:pulse 1.6s ease-in-out infinite;}
+  @keyframes pulse{0%,100%{opacity:1;}50%{opacity:.3;}}
+
+  .progress-bar{height:5px;border-radius:3px;background:rgba(245,241,232,0.15);overflow:hidden;margin-bottom:26px;}
+  .progress-fill{height:100%;background:var(--gold);width:0%;transition:width .5s var(--ease);}
+
+  .thank-icon{font-size:2.4rem;margin-bottom:16px;}
+
+  @media(max-width:520px){
+    .card{padding:32px 22px;}
+    .choice-grid{grid-template-columns:1fr;}
+  }
+</style>
+</head>
+<body>
+
+<div id="app">
+
+  <!-- SPLASH -->
+  <div class="screen screen-dark active" id="screen-splash">
+    <div class="splash-text">
+      <div class="splash-ring">
+        <div class="ring ring2"></div>
+        <div class="ring ring1"></div>
+        <div class="core"></div>
+      </div>
+      <div class="logo mono" style="color:var(--gold-soft);">C E R N E</div>
+      <div style="color:rgba(245,241,232,.5);font-size:0.85rem;">carregando atendimento…</div>
+    </div>
+  </div>
+
+  <!-- LOGIN -->
+  <div class="screen screen-dark" id="screen-login">
+    <div class="card">
+      <span class="eyebrow">ACESSO</span>
+      <h2 style="color:var(--cream);">Entrar</h2>
+      <p class="lead">Digite seu e-mail para continuar. Massagistas cadastrados entram direto na área de atendimento.</p>
+      <div class="field">
+        <label style="color:rgba(245,241,232,.6);">E-mail</label>
+        <input type="email" id="input-email" placeholder="seuemail@exemplo.com" autocomplete="email">
+      </div>
+      <button class="btn btn-gold" id="btn-login">Continuar</button>
+      <div class="err" id="err-login"></div>
+    </div>
+  </div>
+
+  <!-- GENDER (client only) -->
+  <div class="screen" id="screen-gender">
+    <div class="card">
+      <span class="eyebrow">ANTES DE COMEÇAR</span>
+      <h2>Como podemos te chamar?</h2>
+      <p class="lead">Isso só ajusta a forma como falamos com você.</p>
+      <div class="choice-grid">
+        <div class="choice" data-gender="feminino">
+          <span class="ic">♀</span>
+          <span class="lbl">Feminino</span>
+        </div>
+        <div class="choice" data-gender="masculino">
+          <span class="ic">♂</span>
+          <span class="lbl">Masculino</span>
+        </div>
+      </div>
+      <button class="btn" id="btn-gender-next" disabled>Continuar</button>
+    </div>
+  </div>
+
+  <!-- CLIENT WELCOME -->
+  <div class="screen screen-dark" id="screen-welcome-client">
+    <div class="card" style="text-align:center;">
+      <div class="splash-ring" style="transform:scale(0.75);">
+        <div class="ring ring2"></div>
+        <div class="ring ring1"></div>
+        <div class="core"></div>
+      </div>
+      <h2 id="welcome-client-title" style="color:var(--cream);">Bem-vinda</h2>
+      <p class="lead" style="max-width:340px;margin-left:auto;margin-right:auto;">Você está prestes a acompanhar sua sessão em tempo real.</p>
+      <button class="btn btn-gold" id="btn-welcome-client-next">Continuar</button>
+    </div>
+  </div>
+
+  <!-- MASSAGISTA WELCOME -->
+  <div class="screen screen-dark" id="screen-welcome-massagista">
+    <div class="card" style="text-align:center;">
+      <div class="splash-ring" style="transform:scale(0.75);">
+        <div class="ring ring2"></div>
+        <div class="ring ring1"></div>
+        <div class="core"></div>
+      </div>
+      <span class="eyebrow">ÁREA DA MASSAGISTA</span>
+      <h2 style="color:var(--cream);">Bem-vindo, João</h2>
+      <p class="lead" style="max-width:340px;margin-left:auto;margin-right:auto;">Vamos montar o atendimento da sua próxima cliente.</p>
+      <button class="btn btn-gold" id="btn-welcome-massagista-next">Nova sessão</button>
+    </div>
+  </div>
+
+  <!-- CLIENT: enter code -->
+  <div class="screen" id="screen-codigo-cliente">
+    <div class="card">
+      <span class="eyebrow">ACOMPANHAR SESSÃO</span>
+      <h2>Insira o código</h2>
+      <p class="lead">Sua massagista vai te passar um código depois de montar sua tabela de atendimento. Digite-o abaixo para acompanhar tudo em tempo real.</p>
+      <div class="field">
+        <label>Código da sessão</label>
+        <input type="text" id="input-codigo" placeholder="EX: JF-4821" style="text-transform:uppercase;">
+      </div>
+      <button class="btn" id="btn-codigo-enviar">Enviar</button>
+      <div class="err" id="err-codigo"></div>
+    </div>
+  </div>
+
+  <!-- MASSAGISTA: escolher plano -->
+  <div class="screen" id="screen-plano">
+    <div class="card card-wide">
+      <span class="eyebrow">ETAPA 1</span>
+      <h2>Qual plano sua cliente escolheu?</h2>
+      <p class="lead">Isso define as opções das próximas etapas.</p>
+      <div class="plan-grid">
+        <div class="plan-card plan-basico" data-plano="basico">
+          <div class="plan-head">Plano Básico</div>
+          <div class="plan-body">Costas e pé · sem dores · adicionais essenciais</div>
+        </div>
+        <div class="plan-card plan-mediano" data-plano="mediano">
+          <div class="plan-head">Plano Mediano</div>
+          <div class="plan-body">4 regiões · dores · adicionais completos</div>
+        </div>
+        <div class="plan-card plan-pro" data-plano="pro">
+          <div class="plan-head">Plano Pro</div>
+          <div class="plan-body">Corpo todo · dores · todos os adicionais</div>
+        </div>
+      </div>
+      <button class="btn" id="btn-plano-next" disabled>Confirmar plano</button>
+    </div>
+  </div>
+
+  <!-- MASSAGISTA: ordem das partes -->
+  <div class="screen" id="screen-ordem">
+    <div class="card card-wide">
+      <span class="eyebrow">ETAPA 2</span>
+      <h2>Qual a ordem da massagem?</h2>
+      <p class="lead">Clique nas partes na ordem em que serão feitas.</p>
+      <div class="facial-note">O tratamento facial é sempre a última etapa — não precisa numerar.</div>
+      <div class="parts-grid" id="parts-grid"></div>
+      <div class="btn-row">
+        <button class="btn btn-ghost" id="btn-ordem-reset">Reiniciar</button>
+        <button class="btn" id="btn-ordem-next" disabled>Confirmar ordem</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MASSAGISTA: repetições -->
+  <div class="screen" id="screen-repeticoes">
+    <div class="card">
+      <span class="eyebrow">ETAPA 3</span>
+      <h2>Quantas repetições?</h2>
+      <p class="lead">Quantas vezes o ciclo de massagem será repetido.</p>
+      <div class="choice-grid">
+        <div class="choice" data-rep="1">
+          <span class="ic">①</span>
+          <span class="lbl">1 repetição</span>
+        </div>
+        <div class="choice" data-rep="2">
+          <span class="ic">②</span>
+          <span class="lbl">2 repetições</span>
+        </div>
+      </div>
+      <button class="btn" id="btn-rep-next" disabled>Confirmar</button>
+    </div>
+  </div>
+
+  <!-- MASSAGISTA: adicionais -->
+  <div class="screen" id="screen-adicionais">
+    <div class="card">
+      <span class="eyebrow">ETAPA 4</span>
+      <h2>Informe os adicionais</h2>
+      <p class="lead">Selecione quantos quiser.</p>
+      <div class="check-list" id="adicionais-list"></div>
+      <button class="btn" id="btn-adicionais-next">Confirmar</button>
+    </div>
+  </div>
+
+  <!-- MASSAGISTA: dores -->
+  <div class="screen" id="screen-dores">
+    <div class="card">
+      <span class="eyebrow">ETAPA 5</span>
+      <h2>Quais dores a cliente está sentindo?</h2>
+      <p class="lead">Descreva rapidamente, se houver.</p>
+      <div class="field">
+        <textarea id="input-dores" placeholder="Ex: tensão no trapézio direito, dor lombar leve..."></textarea>
+      </div>
+      <div class="btn-row">
+        <button class="btn btn-ghost" id="btn-dores-pular">Pular</button>
+        <button class="btn" id="btn-dores-enviar">Enviar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MASSAGISTA: gerando -->
+  <div class="screen screen-dark" id="screen-gerando">
+    <div class="card" style="text-align:center;">
+      <div class="loader"></div>
+      <h2 style="color:var(--cream);font-size:1.2rem;">Ajeitando tabela…</h2>
+    </div>
+  </div>
+
+  <!-- MASSAGISTA: tabela final -->
+  <div class="screen" id="screen-tabela-massagista">
+    <div class="card card-xwide">
+      <span class="eyebrow">SESSÃO PRONTA</span>
+      <h2>Tabela de atendimento</h2>
+      <p class="lead">Marque os itens conforme forem concluídos. A cliente vê isso em tempo real.</p>
+      <div class="code-box">
+        <div>
+          <div class="mono" style="font-size:0.7rem;letter-spacing:.08em;color:rgba(245,241,232,.55);">CÓDIGO PARA A CLIENTE</div>
+          <div class="code" id="codigo-display">—</div>
+        </div>
+        <button class="btn btn-ghost" style="width:auto;color:var(--cream);border-color:var(--line-light);" id="btn-copiar-codigo">Copiar</button>
+      </div>
+      <div class="table-rows" id="tabela-rows"></div>
+      <div class="summary-box" id="tabela-summary"></div>
+      <button class="btn btn-gold" id="btn-finalizar">Finalizar massagem</button>
+      <div class="err" id="msg-finalizar" style="color:var(--moss-dark);"></div>
+    </div>
+  </div>
+
+  <!-- CLIENT: acompanhamento ao vivo -->
+  <div class="screen screen-dark" id="screen-tabela-cliente">
+    <div class="card card-wide">
+      <div class="status-pill"><span class="dotlive"></span> Acompanhando em tempo real</div>
+      <h2 style="color:var(--cream);" id="cliente-titulo">Sua sessão</h2>
+      <p class="lead">Cada etapa é marcada pela sua massagista assim que é concluída.</p>
+      <div class="progress-bar"><div class="progress-fill" id="progress-fill"></div></div>
+      <div class="table-rows" id="tabela-cliente-rows"></div>
+    </div>
+  </div>
+
+  <!-- CLIENT: concluído -->
+  <div class="screen screen-dark" id="screen-concluido">
+    <div class="card" style="text-align:center;">
+      <div class="thank-icon">✦</div>
+      <h2 style="color:var(--cream);" id="concluido-titulo">Obrigada pela preferência!</h2>
+      <p class="lead" style="max-width:360px;margin:0 auto;">Sua massagem foi concluída e o pagamento já foi descontado. Esperamos você na próxima sessão.</p>
+    </div>
+  </div>
+
+</div>
+
+<script>
+(function(){
+  const MASSAGISTA_EMAIL = 'joaofelipeximenes711@gmail.com';
+
+  const PARTS_BY_PLAN = {
+    basico: ['Costas','Pé'],
+    mediano: ['Costas','Pé','Perna','Pescoço'],
+    pro: ['Pé','Pescoço','Costas','Braço','Mão','Perna']
+  };
+  const ADD_BASE = ['Com creme','Incluir especial','Sem creme','Não incluir especial'];
+  const ADD_BY_PLAN = {
+    basico: ADD_BASE,
+    mediano: [...ADD_BASE,'Pentear sobrancelha'],
+    pro: [...ADD_BASE,'Pentear sobrancelha']
+  };
+  const PLAN_LABEL = { basico:'Plano Básico', mediano:'Plano Mediano', pro:'Plano Pro' };
+
+  const state = {
+    role:null, email:null, gender:null,
+    plano:null, ordem:[], repeticoes:null, adicionais:[], dores:'',
+    itens:[], code:null, pollTimer:null
+  };
+
+  const $ = (sel) => document.querySelector(sel);
+  const $all = (sel) => Array.from(document.querySelectorAll(sel));
+
+  function goTo(id){
+    $all('.screen.active').forEach(s=>s.classList.remove('active'));
+    const el = document.getElementById(id);
+    requestAnimationFrame(()=> el.classList.add('active'));
+  }
+
+  // ---------- SPLASH ----------
+  setTimeout(()=> goTo('screen-login'), 1600);
+
+  // ---------- LOGIN ----------
+  $('#btn-login').addEventListener('click', ()=>{
+    const val = $('#input-email').value.trim().toLowerCase();
+    const errEl = $('#err-login');
+    if(!val || !val.includes('@')){
+      errEl.textContent = 'Digite um e-mail válido.';
+      return;
+    }
+    errEl.textContent = '';
+    state.email = val;
+    if(val === MASSAGISTA_EMAIL){
+      state.role = 'massagista';
+      goTo('screen-welcome-massagista');
+    } else {
+      state.role = 'cliente';
+      goTo('screen-gender');
+    }
+  });
+
+  // ---------- GENDER ----------
+  $all('#screen-gender .choice').forEach(el=>{
+    el.addEventListener('click', ()=>{
+      $all('#screen-gender .choice').forEach(c=>c.classList.remove('selected'));
+      el.classList.add('selected');
+      state.gender = el.dataset.gender;
+      $('#btn-gender-next').disabled = false;
+    });
+  });
+  $('#btn-gender-next').addEventListener('click', ()=>{
+    const title = $('#welcome-client-title');
+    title.textContent = state.gender === 'feminino' ? 'Bem-vinda' : 'Bem-vindo';
+    goTo('screen-welcome-client');
+  });
+
+  $('#btn-welcome-client-next').addEventListener('click', ()=> goTo('screen-codigo-cliente'));
+  $('#btn-welcome-massagista-next').addEventListener('click', ()=> goTo('screen-plano'));
+
+  // ---------- CLIENTE: código ----------
+  $('#btn-codigo-enviar').addEventListener('click', async ()=>{
+    const code = $('#input-codigo').value.trim().toUpperCase();
+    const errEl = $('#err-codigo');
+    if(!code){ errEl.textContent = 'Digite o código.'; return; }
+    try{
+      const res = await window.storage.get('sessao:'+code, true);
+      if(!res || !res.value){
+        errEl.textContent = 'Código não encontrado. Confira com sua massagista.';
+        return;
+      }
+      errEl.textContent = '';
+      state.code = code;
+      const titulo = $('#cliente-titulo');
+      titulo.textContent = state.gender === 'feminino' ? 'Sua sessão, bem-vinda' : 'Sua sessão, bem-vindo';
+      goTo('screen-tabela-cliente');
+      renderClienteFromStorage(JSON.parse(res.value));
+      startPolling();
+    }catch(e){
+      errEl.textContent = 'Código não encontrado. Confira com sua massagista.';
+    }
+  });
+
+  function startPolling(){
+    stopPolling();
+    state.pollTimer = setInterval(async ()=>{
+      try{
+        const res = await window.storage.get('sessao:'+state.code, true);
+        if(res && res.value){
+          const sessao = JSON.parse(res.value);
+          renderClienteFromStorage(sessao);
+          if(sessao.status === 'concluido'){
+            stopPolling();
+            const t = $('#concluido-titulo');
+            t.textContent = state.gender === 'feminino' ? 'Obrigada pela preferência!' : 'Obrigado pela preferência!';
+            setTimeout(()=> goTo('screen-concluido'), 500);
+          }
+        }
+      }catch(e){ /* silencioso — tenta de novo no próximo ciclo */ }
+    }, 3000);
+  }
+  function stopPolling(){
+    if(state.pollTimer){ clearInterval(state.pollTimer); state.pollTimer = null; }
+  }
+
+  function renderClienteFromStorage(sessao){
+    const rowsEl = $('#tabela-cliente-rows');
+    rowsEl.innerHTML = '';
+    sessao.itens.forEach((item,i)=>{
+      const row = document.createElement('div');
+      row.className = 'trow' + (item.facial ? ' facial' : '');
+      row.style.background = item.facial ? 'rgba(199,154,86,.14)' : 'rgba(245,241,232,.04)';
+      row.style.color = 'var(--cream)';
+      row.innerHTML = `
+        <div class="step">${i+1}</div>
+        <div class="info">
+          <div class="t-name">${item.label}</div>
+        </div>
+        <div class="tcheck${item.done?' done':''}"></div>
+      `;
+      rowsEl.appendChild(row);
+    });
+    const total = sessao.itens.length;
+    const feitos = sessao.itens.filter(i=>i.done).length;
+    $('#progress-fill').style.width = (total? (feitos/total*100):0) + '%';
+  }
+
+  // ---------- MASSAGISTA: plano ----------
+  $all('#screen-plano .plan-card').forEach(el=>{
+    el.addEventListener('click', ()=>{
+      $all('#screen-plano .plan-card').forEach(c=>c.classList.remove('selected'));
+      el.classList.add('selected');
+      state.plano = el.dataset.plano;
+      $('#btn-plano-next').disabled = false;
+    });
+  });
+  $('#btn-plano-next').addEventListener('click', ()=>{
+    state.ordem = [];
+    buildOrdemScreen();
+    goTo('screen-ordem');
+  });
+
+  // ---------- MASSAGISTA: ordem ----------
+  function buildOrdemScreen(){
+    const grid = $('#parts-grid');
+    grid.innerHTML = '';
+    const parts = PARTS_BY_PLAN[state.plano];
+    parts.forEach(p=>{
+      const el = document.createElement('div');
+      el.className = 'part';
+      el.dataset.part = p;
+      el.innerHTML = `<span>${p}</span>`;
+      el.addEventListener('click', ()=> togglePart(el,p));
+      grid.appendChild(el);
+    });
+    $('#btn-ordem-next').disabled = true;
+  }
+  function togglePart(el,p){
+    const idx = state.ordem.indexOf(p);
+    if(idx === -1){
+      state.ordem.push(p);
+    } else {
+      state.ordem.splice(idx,1);
+    }
+    refreshOrdemUI();
+  }
+  function refreshOrdemUI(){
+    $all('#parts-grid .part').forEach(el=>{
+      const p = el.dataset.part;
+      const idx = state.ordem.indexOf(p);
+      const oldBadge = el.querySelector('.badge');
+      if(oldBadge) oldBadge.remove();
+      if(idx !== -1){
+        el.classList.add('picked');
+        const b = document.createElement('span');
+        b.className = 'badge';
+        b.textContent = idx+1;
+        el.appendChild(b);
+      } else {
+        el.classList.remove('picked');
+      }
+    });
+    const total = PARTS_BY_PLAN[state.plano].length;
+    $('#btn-ordem-next').disabled = state.ordem.length !== total;
+  }
+  $('#btn-ordem-reset').addEventListener('click', ()=>{
+    state.ordem = [];
+    refreshOrdemUI();
+  });
+  $('#btn-ordem-next').addEventListener('click', ()=> goTo('screen-repeticoes'));
+
+  // ---------- MASSAGISTA: repetições ----------
+  $all('#screen-repeticoes .choice').forEach(el=>{
+    el.addEventListener('click', ()=>{
+      $all('#screen-repeticoes .choice').forEach(c=>c.classList.remove('selected'));
+      el.classList.add('selected');
+      state.repeticoes = el.dataset.rep;
+      $('#btn-rep-next').disabled = false;
+    });
+  });
+  $('#btn-rep-next').addEventListener('click', ()=>{
+    buildAdicionaisScreen();
+    goTo('screen-adicionais');
+  });
+
+  // ---------- MASSAGISTA: adicionais ----------
+  function buildAdicionaisScreen(){
+    state.adicionais = [];
+    const list = $('#adicionais-list');
+    list.innerHTML = '';
+    ADD_BY_PLAN[state.plano].forEach(a=>{
+      const el = document.createElement('div');
+      el.className = 'check-item';
+      el.innerHTML = `<span class="dot"></span><span>${a}</span>`;
+      el.addEventListener('click', ()=>{
+        const on = el.classList.toggle('on');
+        if(on) state.adicionais.push(a);
+        else state.adicionais = state.adicionais.filter(x=>x!==a);
+      });
+      list.appendChild(el);
+    });
+  }
+  $('#btn-adicionais-next').addEventListener('click', ()=>{
+    if(state.plano === 'basico'){
+      state.dores = '';
+      gerarTabela();
+    } else {
+      $('#input-dores').value = '';
+      goTo('screen-dores');
+    }
+  });
+
+  // ---------- MASSAGISTA: dores ----------
+  $('#btn-dores-pular').addEventListener('click', ()=>{
+    state.dores = '';
+    gerarTabela();
+  });
+  $('#btn-dores-enviar').addEventListener('click', ()=>{
+    state.dores = $('#input-dores').value.trim();
+    gerarTabela();
+  });
+
+  // ---------- GERAR TABELA ----------
+  function gerarTabela(){
+    goTo('screen-gerando');
+    setTimeout(async ()=>{
+      state.itens = state.ordem.map(p=>({label:p, done:false, facial:false}));
+      state.itens.push({label:'Tratamento facial', done:false, facial:true});
+      state.code = gerarCodigo();
+      await salvarSessao('em_andamento');
+      renderTabelaMassagista();
+      goTo('screen-tabela-massagista');
+    }, 1500);
+  }
+  function gerarCodigo(){
+    const n = Math.floor(1000 + Math.random()*9000);
+    return 'JF-' + n;
+  }
+  async function salvarSessao(status){
+    const sessao = {
+      plano: state.plano,
+      repeticoes: state.repeticoes,
+      adicionais: state.adicionais,
+      dores: state.dores,
+      itens: state.itens,
+      status: status
+    };
+    try{
+      await window.storage.set('sessao:'+state.code, JSON.stringify(sessao), true);
+    }catch(e){
+      console.error('Erro ao salvar sessão', e);
+    }
+  }
+
+  function renderTabelaMassagista(){
+    $('#codigo-display').textContent = state.code;
+    const rowsEl = $('#tabela-rows');
+    rowsEl.innerHTML = '';
+    state.itens.forEach((item,i)=>{
+      const row = document.createElement('div');
+      row.className = 'trow' + (item.facial ? ' facial' : '');
+      row.innerHTML = `
+        <div class="step">${i+1}</div>
+        <div class="info">
+          <div class="t-name">${item.label}</div>
+        </div>
+        <div class="tcheck${item.done?' done':''}" data-idx="${i}"></div>
+      `;
+      row.querySelector('.tcheck').addEventListener('click', async (e)=>{
+        item.done = !item.done;
+        e.target.classList.toggle('done', item.done);
+        await salvarSessao('em_andamento');
+      });
+      rowsEl.appendChild(row);
+    });
+    const addTxt = state.adicionais.length ? state.adicionais.join(', ') : 'nenhum';
+    const doresTxt = state.dores ? state.dores : 'não informado';
+    let summary = `<b>Plano:</b> ${PLAN_LABEL[state.plano]} &nbsp;·&nbsp; <b>Repetições:</b> ${state.repeticoes} &nbsp;·&nbsp; <b>Adicionais:</b> ${addTxt}`;
+    if(state.plano !== 'basico'){
+      summary += `<br><b>Dores relatadas:</b> ${doresTxt}`;
+    }
+    $('#tabela-summary').innerHTML = summary;
+    $('#msg-finalizar').textContent = '';
+  }
+
+  $('#btn-copiar-codigo').addEventListener('click', ()=>{
+    navigator.clipboard?.writeText(state.code).catch(()=>{});
+    const b = $('#btn-copiar-codigo');
+    const old = b.textContent;
+    b.textContent = 'Copiado!';
+    setTimeout(()=> b.textContent = old, 1400);
+  });
+
+  $('#btn-finalizar').addEventListener('click', async ()=>{
+    await salvarSessao('concluido');
+    $('#msg-finalizar').textContent = 'Massagem finalizada. A cliente já foi notificada.';
+  });
+
+})();
+</script>
+</body>
+</html>
